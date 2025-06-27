@@ -168,6 +168,10 @@ tipo = st.sidebar.radio(
     ("Estados (E)", "Municípios (M)", "Federal (U)", "Distrito Federal (D)", "Por código IBGE"),
 )
 
+
+st.sidebar.markdown("👤 Construído por **André Merlo**")
+st.sidebar.markdown("---")
+
 uf_escolhida = None
 if tipo == "Municípios (M)":
     opcoes_uf = ["Todos os estados"] + sorted(
@@ -189,10 +193,6 @@ else:
     esfera = mapa[tipo]
     codigos_ibge = None
 
-
-# Rodapé de autoria
-st.sidebar.markdown("---")
-st.sidebar.markdown("👤 Construído por **André Merlo**")
 
 if st.sidebar.button("▶️ Iniciar Extração"):
     st.subheader(f"🔎 Consultando dados de {ano}...")
