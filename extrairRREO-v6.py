@@ -3,6 +3,7 @@ import pandas as pd
 import requests
 import time
 import os
+from datetime import datetime
 
 # === CONFIGURAÇÕES DA API ===
 URL_ENTES = "https://apidatalake.tesouro.gov.br/ords/siconfi/tt//entes"
@@ -88,11 +89,13 @@ def executar_extracao_municipios_uf_estado_a_estado(ano, entes_df):
 
         if resultados:
             df_concat = pd.concat(resultados, ignore_index=True)
-            caminho_csv = os.path.join(OUTPUT_DIR, f"RREO_{uf}_{ano}_P1a6.csv")
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"RREO_{uf}_M_{ano}_P1a6_{timestamp}.csv"
+            caminho_csv = os.path.join(OUTPUT_DIR, filename)
             df_concat.to_csv(caminho_csv, index=False, sep=";", encoding="utf-8")
-            print(f"✅ Arquivo salvo: {caminho_csv}")
+            st.success(f"✅ Arquivo salvo: {caminho_csv}")
         else:
-            print(f"⚠️ Nenhum dado encontrado para UF {uf}")
+            st.warning(f"⚠️ Nenhum dado encontrado para UF {uf}")
 
 
 # === EXECUTAR EXTRAÇÃO STREAMLIT (TODOS OS MODOS) ===
@@ -103,7 +106,7 @@ def executar_extracao_geral(ano, esfera=None, lista_cod_ibge=None, uf_filtro=Non
         entes_filtrados = entes[entes["cod_ibge"].isin(lista_cod_ibge)]
     elif esfera:
         entes_filtrados = entes[entes["esfera"] == esfera]
-        if esfera == "M" and uf_filtro:
+        if uf_filtro:
             entes_filtrados = entes_filtrados[entes_filtrados["uf"] == uf_filtro]
     else:
         entes_filtrados = entes
@@ -112,10 +115,8 @@ def executar_extracao_geral(ano, esfera=None, lista_cod_ibge=None, uf_filtro=Non
         st.warning("Nenhum ente encontrado.")
         return {}
 
-    # Novo comportamento: se todos os municipios, roda estado a estado com salvamento
     if esfera == "M" and uf_filtro is None:
         executar_extracao_municipios_uf_estado_a_estado(ano, entes_filtrados)
-        st.success("✅ Arquivos salvos no diretório 'csv_por_estado'")
         return {}
 
     resultados = []
@@ -153,7 +154,19 @@ def executar_extracao_geral(ano, esfera=None, lista_cod_ibge=None, uf_filtro=Non
     barra.empty()
     status_area.empty()
 
-    return {"BR": pd.concat(resultados, ignore_index=True)} if resultados else {}
+    if resultados:
+        df_final = pd.concat(resultados, ignore_index=True)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        if esfera == "M":
+            nome_uf = uf_filtro or "Todos"
+        elif esfera == "E":
+            nome_uf = uf_filtro or "Todos"
+        else:
+            nome_uf = esfera
+        filename = f"RREO_{nome_uf}_{esfera}_{ano}_P1a6_{timestamp}.csv"
+        return {filename: df_final}
+    else:
+        return {}
 
 
 # === INTERFACE STREAMLIT ===
@@ -168,17 +181,13 @@ tipo = st.sidebar.radio(
     ("Estados (E)", "Municípios (M)", "Federal (U)", "Distrito Federal (D)", "Por código IBGE"),
 )
 
-
-st.sidebar.markdown("👤 Construído por **André Merlo**")
-st.sidebar.markdown("---")
-
 uf_escolhida = None
-if tipo == "Municípios (M)":
-    opcoes_uf = ["Todos os estados"] + sorted(
-        pd.unique(obter_entes().query("esfera == 'M'")["uf"].dropna())
-    )
-    escolha = st.sidebar.selectbox("UF para municípios:", opcoes_uf)
-    if escolha != "Todos os estados":
+entes_df_temp = obter_entes()
+if tipo in ("Municípios (M)", "Estados (E)"):
+    esfera_tipo = "M" if "Municípios" in tipo else "E"
+    opcoes_uf = ["Todos"] + sorted(pd.unique(entes_df_temp.query(f"esfera == '{esfera_tipo}'")["uf"].dropna()))
+    escolha = st.sidebar.selectbox("UF para extração:", opcoes_uf)
+    if escolha != "Todos":
         uf_escolhida = escolha
 
 if tipo == "Por código IBGE":
@@ -193,6 +202,10 @@ else:
     esfera = mapa[tipo]
     codigos_ibge = None
 
+# Rodapé de autoria
+st.sidebar.markdown("---")
+st.sidebar.markdown("👤 Construído por **André Merlo**")
+st.sidebar.markdown("Versão - V-1.6 **")
 
 if st.sidebar.button("▶️ Iniciar Extração"):
     st.subheader(f"🔎 Consultando dados de {ano}...")
@@ -205,14 +218,14 @@ if st.sidebar.button("▶️ Iniciar Extração"):
     )
 
     if resultados:
-        for uf, df in resultados.items():
-            st.success(f"✅ Dados extraídos para {uf} - {len(df)} registros.")
+        for nome_arquivo, df in resultados.items():
+            st.success(f"✅ Dados extraídos - {len(df)} registros.")
             st.dataframe(df.head(20))
             csv = df.to_csv(index=False, sep=";").encode("utf-8")
             st.download_button(
-                label=f"📥 Baixar CSV - {uf}",
+                label="📥 Baixar CSV",
                 data=csv,
-                file_name=f"RREO_{uf}_{ano}_P1a6.csv",
+                file_name=nome_arquivo,
                 mime="text/csv"
             )
     else:
