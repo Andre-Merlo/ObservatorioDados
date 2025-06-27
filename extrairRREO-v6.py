@@ -189,6 +189,11 @@ else:
     esfera = mapa[tipo]
     codigos_ibge = None
 
+
+# Rodapé de autoria
+st.sidebar.markdown("---")
+st.sidebar.markdown("👤 Construído por **André Merlo**")
+
 if st.sidebar.button("▶️ Iniciar Extração"):
     st.subheader(f"🔎 Consultando dados de {ano}...")
 
