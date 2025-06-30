@@ -64,9 +64,15 @@ def consultar_rreo_inteligente(cod_ibge, ano, periodo, esfera, populacao):
 # === EXECUTAR EXTRAÇÃO MUNICIPAL (TODOS OS ESTADOS) COM SALVAMENTO IMEDIATO ===
 def executar_extracao_municipios_uf_estado_a_estado(ano, entes_df):
     grupos = entes_df.groupby("uf")
+
     for uf, grupo in grupos:
+        st.markdown(f"### 🟦 Iniciando extração para UF: `{uf}` ({len(grupo)} municípios)")
         resultados = []
-        print(f"\n🟦 Iniciando extração para UF: {uf} ({len(grupo)} municípios)")
+        barra = st.progress(0)
+        status_area = st.empty()
+
+        total = len(grupo) * 6
+        contador = 0
 
         for _, row in grupo.iterrows():
             cod_ibge = row["cod_ibge"]
@@ -75,7 +81,7 @@ def executar_extracao_municipios_uf_estado_a_estado(ano, entes_df):
             populacao = row.get("populacao", 0) or 0
 
             for periodo in range(1, 7):
-                print(f"  🔄 {nome_ente} ({cod_ibge}) - P{periodo}")
+                status_area.write(f"📥 {nome_ente} ({cod_ibge}) - {ano} P{periodo}")
                 df = consultar_rreo_inteligente(cod_ibge, ano, periodo, esfera_ente, populacao)
 
                 if not df.empty:
@@ -85,7 +91,12 @@ def executar_extracao_municipios_uf_estado_a_estado(ano, entes_df):
                     df["periodo"] = periodo
                     resultados.append(df)
 
+                contador += 1
+                barra.progress(contador / total)
                 time.sleep(0.2)
+
+        barra.empty()
+        status_area.empty()
 
         if resultados:
             df_concat = pd.concat(resultados, ignore_index=True)
@@ -205,7 +216,7 @@ else:
 # Rodapé de autoria
 st.sidebar.markdown("---")
 st.sidebar.markdown("👤 Construído por **André Merlo**")
-st.sidebar.markdown("Versão - V-1.6 **")
+st.sidebar.markdown("** Versão - V-1.6 **")
 
 if st.sidebar.button("▶️ Iniciar Extração"):
     st.subheader(f"🔎 Consultando dados de {ano}...")
