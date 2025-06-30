@@ -4,13 +4,14 @@ import requests
 import time
 import os
 from datetime import datetime
-from io import BytesIO
+import base64
 
 # === CONFIGURAÇÕES DA API ===
 URL_ENTES = "https://apidatalake.tesouro.gov.br/ords/siconfi/tt//entes"
 URL_RREO = "https://apidatalake.tesouro.gov.br/ords/siconfi/tt//rreo"
-OUTPUT_DIR = "csv_por_estado"
-os.makedirs(OUTPUT_DIR, exist_ok=True)
+OUTPUT_DIR = ""
+#OUTPUT_DIR = "csv_por_estado"
+#os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # === FUNÇÃO: Obter lista de entes ===
 @st.cache_data(show_spinner="🔍 Carregando entes...")
@@ -61,6 +62,18 @@ def consultar_rreo_inteligente(cod_ibge, ano, periodo, esfera, populacao):
 
     return pd.DataFrame()
 
+# === GERAR DOWNLOAD AUTOMÁTICO ===
+def gerar_download_automatico(df, filename):
+    csv_bytes = df.to_csv(index=False, sep=";").encode("utf-8")
+    b64 = base64.b64encode(csv_bytes).decode()
+    href = f"""
+        <html>
+        <body onload=\"document.getElementById('auto_dl').click()\">
+            <a id=\"auto_dl\" download=\"{filename}\" href=\"data:file/csv;base64,{b64}\">Download</a>
+        </body>
+        </html>
+    """
+    st.components.v1.html(href, height=0)
 
 # === EXECUTAR EXTRAÇÃO MUNICIPAL (TODOS OS ESTADOS) COM SALVAMENTO IMEDIATO ===
 def executar_extracao_municipios_uf_estado_a_estado(ano, entes_df):
@@ -102,25 +115,14 @@ def executar_extracao_municipios_uf_estado_a_estado(ano, entes_df):
             df_concat = pd.concat(resultados, ignore_index=True)
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             filename = f"RREO_{uf}_M_{ano}_P1a6_{timestamp}.csv"
-            caminho_csv = os.path.join(filename)
+            caminho_csv = os.path.join(OUTPUT_DIR, filename)
             df_concat.to_csv(caminho_csv, index=False, sep=";", encoding="utf-8")
 
             st.success(f"✅ Arquivo salvo: {caminho_csv}")
-
-            # Cria CSV em memória para download
-            buffer = BytesIO()
-            df_concat.to_csv(buffer, index=False, sep=";", encoding="utf-8")
-            buffer.seek(0)
-
-            st.download_button(
-                label=f"📥 Baixar CSV - {uf}",
-                data=buffer.getvalue(),
-                file_name=filename,
-                mime="text/csv",
-                key=f"download_{uf}_{timestamp}"
-            )
+            gerar_download_automatico(df_concat, filename)
         else:
             st.warning(f"⚠️ Nenhum dado encontrado para UF {uf}")
+
 
 
 # === EXECUTAR EXTRAÇÃO STREAMLIT (TODOS OS MODOS) ===
