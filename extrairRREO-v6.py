@@ -102,7 +102,7 @@ def executar_extracao_municipios_uf_estado_a_estado(ano, entes_df):
             df_concat = pd.concat(resultados, ignore_index=True)
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             filename = f"RREO_{uf}_M_{ano}_P1a6_{timestamp}.csv"
-            caminho_csv = os.path.join(OUTPUT_DIR, filename)
+            caminho_csv = os.path.join(filename)
             df_concat.to_csv(caminho_csv, index=False, sep=";", encoding="utf-8")
             st.success(f"✅ Arquivo salvo: {caminho_csv}")
         else:
