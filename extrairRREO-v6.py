@@ -5,6 +5,7 @@ import time
 import os
 from datetime import datetime
 import base64
+import zipfile
 
 # === CONFIGURAÇÕES DA API ===
 URL_ENTES = "https://apidatalake.tesouro.gov.br/ords/siconfi/tt//entes"
@@ -62,14 +63,19 @@ def consultar_rreo_inteligente(cod_ibge, ano, periodo, esfera, populacao):
 
     return pd.DataFrame()
 
-# === GERAR DOWNLOAD AUTOMÁTICO ===
-def gerar_download_automatico(df, filename):
-    csv_bytes = df.to_csv(index=False, sep=";").encode("utf-8")
-    b64 = base64.b64encode(csv_bytes).decode()
+# === GERAR DOWNLOAD AUTOMÁTICO ZIP ===
+def gerar_download_automatico_zip(caminho_csv, nome_zip):
+    zip_path = os.path.join(OUTPUT_DIR, nome_zip)
+    with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        zipf.write(caminho_csv, arcname=os.path.basename(caminho_csv))
+
+    with open(zip_path, "rb") as f:
+        bytes_zip = f.read()
+    b64 = base64.b64encode(bytes_zip).decode()
     href = f"""
         <html>
-        <body onload=\"document.getElementById('auto_dl').click()\">
-            <a id=\"auto_dl\" download=\"{filename}\" href=\"data:file/csv;base64,{b64}\">Download</a>
+        <body onload=\"setTimeout(function() {{ document.getElementById('auto_dl').click(); }}, 1000);\">
+            <a id=\"auto_dl\" download=\"{nome_zip}\" href=\"data:file/zip;base64,{b64}\">Download ZIP</a>
         </body>
         </html>
     """
@@ -119,7 +125,7 @@ def executar_extracao_municipios_uf_estado_a_estado(ano, entes_df):
                 df_concat.to_csv(caminho_csv, index=False, sep=";", encoding="utf-8")
 
                 st.success(f"✅ Arquivo salvo: {caminho_csv}")
-                gerar_download_automatico(df_concat, filename)
+                gerar_download_automatico_zip(caminho_csv, f"{filename.replace('.csv', '.zip')}")
             else:
                 st.warning(f"⚠️ Nenhum dado encontrado para UF {uf}")
 
