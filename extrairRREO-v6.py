@@ -77,52 +77,51 @@ def gerar_download_automatico(df, filename):
 
 # === EXECUTAR EXTRAÇÃO MUNICIPAL (TODOS OS ESTADOS) COM SALVAMENTO IMEDIATO ===
 def executar_extracao_municipios_uf_estado_a_estado(ano, entes_df):
-    grupos = entes_df.groupby("uf")
+    grupos = list(entes_df.groupby("uf"))
 
-    for uf, grupo in grupos:
-        st.markdown(f"### 🟦 Iniciando extração para UF: `{uf}` ({len(grupo)} municípios)")
-        resultados = []
-        barra = st.progress(0)
-        status_area = st.empty()
-        total = len(grupo) * 6
-        contador = 0
+    for i, (uf, grupo) in enumerate(grupos):
+        with st.expander(f"🟦 {i+1}/{len(grupos)} - Extração para UF: {uf} ({len(grupo)} municípios)", expanded=True):
+            resultados = []
+            barra = st.progress(0)
+            status_area = st.empty()
+            total = len(grupo) * 6
+            contador = 0
 
-        for _, row in grupo.iterrows():
-            cod_ibge = row["cod_ibge"]
-            nome_ente = row["ente"]
-            esfera_ente = row["esfera"]
-            populacao = row.get("populacao", 0) or 0
+            for _, row in grupo.iterrows():
+                cod_ibge = row["cod_ibge"]
+                nome_ente = row["ente"]
+                esfera_ente = row["esfera"]
+                populacao = row.get("populacao", 0) or 0
 
-            for periodo in range(1, 7):
-                status_area.write(f"📥 {nome_ente} ({cod_ibge}) - {ano} P{periodo}")
-                df = consultar_rreo_inteligente(cod_ibge, ano, periodo, esfera_ente, populacao)
+                for periodo in range(1, 7):
+                    status_area.write(f"📥 {nome_ente} ({cod_ibge}) - {ano} P{periodo}")
+                    df = consultar_rreo_inteligente(cod_ibge, ano, periodo, esfera_ente, populacao)
 
-                if not df.empty:
-                    df["cod_ibge"] = cod_ibge
-                    df["ente"] = nome_ente
-                    df["ano"] = ano
-                    df["periodo"] = periodo
-                    resultados.append(df)
+                    if not df.empty:
+                        df["cod_ibge"] = cod_ibge
+                        df["ente"] = nome_ente
+                        df["ano"] = ano
+                        df["periodo"] = periodo
+                        resultados.append(df)
 
-                contador += 1
-                barra.progress(contador / total)
-                time.sleep(0.2)
+                    contador += 1
+                    barra.progress(contador / total)
+                    time.sleep(0.2)
 
-        barra.empty()
-        status_area.empty()
+            barra.empty()
+            status_area.empty()
 
-        if resultados:
-            df_concat = pd.concat(resultados, ignore_index=True)
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"RREO_{uf}_M_{ano}_P1a6_{timestamp}.csv"
-            caminho_csv = os.path.join(OUTPUT_DIR, filename)
-            df_concat.to_csv(caminho_csv, index=False, sep=";", encoding="utf-8")
+            if resultados:
+                df_concat = pd.concat(resultados, ignore_index=True)
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                filename = f"RREO_{uf}_M_{ano}_P1a6_{timestamp}.csv"
+                caminho_csv = os.path.join(OUTPUT_DIR, filename)
+                df_concat.to_csv(caminho_csv, index=False, sep=";", encoding="utf-8")
 
-            st.success(f"✅ Arquivo salvo: {caminho_csv}")
-            gerar_download_automatico(df_concat, filename)
-        else:
-            st.warning(f"⚠️ Nenhum dado encontrado para UF {uf}")
-
+                st.success(f"✅ Arquivo salvo: {caminho_csv}")
+                gerar_download_automatico(df_concat, filename)
+            else:
+                st.warning(f"⚠️ Nenhum dado encontrado para UF {uf}")
 
 
 # === EXECUTAR EXTRAÇÃO STREAMLIT (TODOS OS MODOS) ===
