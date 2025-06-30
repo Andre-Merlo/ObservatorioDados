@@ -6,6 +6,7 @@ import os
 from datetime import datetime
 import base64
 import zipfile
+import gc
 
 # === CONFIGURAÇÕES DA API ===
 URL_ENTES = "https://apidatalake.tesouro.gov.br/ords/siconfi/tt//entes"
@@ -126,6 +127,9 @@ def executar_extracao_municipios_uf_estado_a_estado(ano, entes_df):
 
                 st.success(f"✅ Arquivo salvo: {caminho_csv}")
                 gerar_download_automatico_zip(caminho_csv, f"{filename.replace('.csv', '.zip')}")
+
+                del df_concat  # libera memória
+                gc.collect()
             else:
                 st.warning(f"⚠️ Nenhum dado encontrado para UF {uf}")
 
