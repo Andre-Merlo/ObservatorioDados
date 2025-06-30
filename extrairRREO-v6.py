@@ -105,6 +105,14 @@ def executar_extracao_municipios_uf_estado_a_estado(ano, entes_df):
             caminho_csv = os.path.join(filename)
             df_concat.to_csv(caminho_csv, index=False, sep=";", encoding="utf-8")
             st.success(f"✅ Arquivo salvo: {caminho_csv}")
+            csv_bytes = df_concat.to_csv(index=False, sep=";").encode("utf-8")
+            st.download_button(
+                label=f"📥 Baixar CSV - {uf}",
+                data=csv_bytes,
+                file_name=filename,
+                mime="text/csv",
+                key=f"download_{uf}_{timestamp}"  # chave única para cada botão
+            )
         else:
             st.warning(f"⚠️ Nenhum dado encontrado para UF {uf}")
 
