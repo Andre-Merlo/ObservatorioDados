@@ -4,6 +4,7 @@ import requests
 import time
 import os
 from datetime import datetime
+from io import BytesIO
 
 # === CONFIGURAÇÕES DA API ===
 URL_ENTES = "https://apidatalake.tesouro.gov.br/ords/siconfi/tt//entes"
@@ -70,7 +71,6 @@ def executar_extracao_municipios_uf_estado_a_estado(ano, entes_df):
         resultados = []
         barra = st.progress(0)
         status_area = st.empty()
-
         total = len(grupo) * 6
         contador = 0
 
@@ -102,16 +102,22 @@ def executar_extracao_municipios_uf_estado_a_estado(ano, entes_df):
             df_concat = pd.concat(resultados, ignore_index=True)
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             filename = f"RREO_{uf}_M_{ano}_P1a6_{timestamp}.csv"
-            caminho_csv = os.path.join(filename)
+            caminho_csv = os.path.join(OUTPUT_DIR, filename)
             df_concat.to_csv(caminho_csv, index=False, sep=";", encoding="utf-8")
+
             st.success(f"✅ Arquivo salvo: {caminho_csv}")
-            csv_bytes = df_concat.to_csv(index=False, sep=";").encode("utf-8")
+
+            # Cria CSV em memória para download
+            buffer = BytesIO()
+            df_concat.to_csv(buffer, index=False, sep=";", encoding="utf-8")
+            buffer.seek(0)
+
             st.download_button(
                 label=f"📥 Baixar CSV - {uf}",
-                data=csv_bytes,
+                data=buffer.getvalue(),
                 file_name=filename,
                 mime="text/csv",
-                key=f"download_{uf}_{timestamp}"  # chave única para cada botão
+                key=f"download_{uf}_{timestamp}"
             )
         else:
             st.warning(f"⚠️ Nenhum dado encontrado para UF {uf}")
