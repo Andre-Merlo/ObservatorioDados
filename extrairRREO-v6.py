@@ -250,7 +250,7 @@ else:
 # Rodapé de autoria
 st.sidebar.markdown("---")
 st.sidebar.markdown("👤 Construído por **André Merlo**")
-st.sidebar.markdown("** Versão - V-1.6 **")
+st.sidebar.markdown("** Versão - V-1.7 - 2025-07-01 **")
 
 if st.sidebar.button("▶️ Iniciar Extração"):
     st.subheader(f"🔎 Consultando dados de {ano}...")
