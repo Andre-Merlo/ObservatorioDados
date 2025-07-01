@@ -204,9 +204,14 @@ def executar_extracao_geral(ano, esfera=None, lista_cod_ibge=None, uf_filtro=Non
         else:
             nome_uf = esfera
         filename = f"RREO_{nome_uf}_{esfera}_{ano}_P1a6_{timestamp}.csv"
-        return {filename: df_final}
+        caminho_csv = os.path.join(OUTPUT_DIR, filename)
+        df_final.to_csv(caminho_csv, index=False, sep=";", encoding="utf-8")
+        st.success(f"✅ Arquivo salvo: {caminho_csv}")
+        gerar_download_automatico_zip(caminho_csv, f"{filename.replace('.csv', '.zip')}")
+        del df_final
+        gc.collect()
     else:
-        return {}
+        st.info("🗂 Nenhum dado encontrado.")
 
 
 # === INTERFACE STREAMLIT ===
@@ -257,16 +262,16 @@ if st.sidebar.button("▶️ Iniciar Extração"):
         uf_filtro=uf_escolhida
     )
 
-    if resultados:
-        for nome_arquivo, df in resultados.items():
-            st.success(f"✅ Dados extraídos - {len(df)} registros.")
-            st.dataframe(df.head(20))
-            csv = df.to_csv(index=False, sep=";").encode("utf-8")
-            st.download_button(
-                label="📥 Baixar CSV",
-                data=csv,
-                file_name=nome_arquivo,
-                mime="text/csv"
-            )
-    else:
-        st.info("🗂 Para todos os municípios, os arquivos foram salvos diretamente por estado na pasta local.")
+#    if resultados:
+#        for nome_arquivo, df in resultados.items():
+#            st.success(f"✅ Dados extraídos - {len(df)} registros.")
+#            st.dataframe(df.head(20))
+#            csv = df.to_csv(index=False, sep=";").encode("utf-8")
+#            st.download_button(
+#                label="📥 Baixar CSV",
+#                data=csv,
+#                file_name=nome_arquivo,
+#                mime="text/csv"
+#            )
+#    else:
+#        st.info("🗂 Para todos os municípios, os arquivos foram salvos diretamente por estado na pasta local.")
