@@ -151,6 +151,10 @@ def executar_extracao_geral(ano, esfera=None, lista_cod_ibge=None, uf_filtro=Non
         st.warning("Nenhum ente encontrado.")
         return {}
 
+    # ✅ Exibir total de municípios para o UF selecionado
+    if esfera == "M" and uf_filtro:
+        st.markdown(f"### 🟦 UF Selecionada: `{uf_filtro}` - {len(entes_filtrados)} municípios")
+
     if esfera == "M" and uf_filtro is None:
         executar_extracao_municipios_uf_estado_a_estado(ano, entes_filtrados)
         return {}
